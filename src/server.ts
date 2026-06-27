@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
 import { env, validateEnv } from './config/env.js';
 import { registerRoutes } from './routes/index.js';
+import { registerAuthHooks } from './middleware/auth.js';
 
 validateEnv();
 
@@ -32,6 +33,8 @@ app.register(fastifyJwt, {
 app.decorate('prisma', prisma);
 app.decorate('redis', redis);
 
+// Register auth hooks (must be before routes)
+await app.register(registerAuthHooks);
 // Health check
 app.get('/health', async (request, reply) => {
   return { status: 'ok', timestamp: new Date() };

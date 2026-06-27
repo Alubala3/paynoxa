@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { randomBytes } from 'crypto';
-import argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import { env } from '../../config/env.js';
 
 export async function generateApiKeyPair(tenantId: string, mode: 'test' | 'live') {
@@ -30,12 +30,9 @@ export async function createApiKey(
   const secret = randomBytes(32).toString('hex');
   const raw = `${keyId}.${secret}`;
 
-  // Hash secret with pepper
   const pepper = env.ARGON2_PEPPER;
   const secretToHash = secret + pepper;
-  const secretHash = await argon2.hash(secretToHash, {
-    type: argon2.argon2id,
-  });
+  const secretHash = await bcrypt.hash(secretToHash, 12);
 
   const created = await prisma.apiKey.create({
     data: {
@@ -53,7 +50,7 @@ export async function createApiKey(
   return {
     id: created.id,
     key_id: keyId,
-    raw, // Only show once
+    raw,
     prefix,
     mode,
     type,
@@ -68,7 +65,7 @@ export async function verifyApiKeySecret(
   const secretToVerify = secret + pepper;
 
   try {
-    return await argon2.verify(secretHash, secretToVerify);
+    return await bcrypt.compare(secretToVerify, secretHash);
   } catch (err) {
     return false;
   }

@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import fp from 'fastify-plugin';
 
-export async function registerAuthHooks(app: FastifyInstance) {
+async function authPlugin(app: FastifyInstance) {
   app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       await request.jwtVerify();
@@ -9,6 +10,8 @@ export async function registerAuthHooks(app: FastifyInstance) {
     }
   });
 }
+
+export const registerAuthHooks = fp(authPlugin);
 
 export async function resolveTenant(request: FastifyRequest) {
   const user = request.user as any;
@@ -43,7 +46,6 @@ export async function resolveApiKeyTenant(
     throw new Error('API key not found or revoked');
   }
 
-  // Verify secret (simplified for now; use argon2 in production)
   const { verifyApiKeySecret } = await import('../modules/api-keys/api-key.service.js');
   const valid = await verifyApiKeySecret(apiKey.secret_hash, secret);
   if (!valid) {
