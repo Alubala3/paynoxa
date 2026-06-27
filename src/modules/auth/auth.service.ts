@@ -1,11 +1,11 @@
 import { PrismaClient } from '@prisma/client';
-import argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import { BadRequestError, ConflictError } from '../../utils/errors.js';
 
 const prisma = new PrismaClient();
 
 export async function hashPassword(password: string): Promise<string> {
-  return argon2.hash(password, { type: argon2.argon2id });
+  return bcrypt.hash(password, 12);
 }
 
 export async function verifyPassword(
@@ -13,7 +13,7 @@ export async function verifyPassword(
   password: string
 ): Promise<boolean> {
   try {
-    return await argon2.verify(passwordHash, password);
+    return await bcrypt.compare(password, passwordHash);
   } catch (err) {
     return false;
   }
